@@ -8,12 +8,12 @@ X = 800
 Y = 800
 screen = pygame.display.set_mode((X, Y))
 pygame.init()
-
-WHITE = (255, 255, 255)
-GREY = (128, 128, 128)
-YELLOW = (204, 204, 0)
-BLUE = (50, 255, 255)
-BLACK = (0, 0, 0)
+# Original variable names with improved colors
+WHITE = (255, 255, 255)       # Pure white (for pieces and text)
+GREY = (200, 200, 200)        # Light grey for light squares (was 128,128,128)
+YELLOW = (255, 255, 100)      # Brighter yellow for highlights (was 204,204,0)
+BLUE = (100, 200, 255)        # Softer, brighter blue for legal moves (was 50,255,255)
+BLACK = (50, 50, 50)  
 
 
 b = chess.Board()
@@ -44,23 +44,32 @@ pieces = {
     'Q': load_and_scale_piece('images/white_queen.png'),
     'K': load_and_scale_piece('images/white_king.png'),
 }
-
 def update(screen, board):
+    # Draw chessboard squares with alternating colors
+    for i in range(64):
+        row = i // 8
+        col = i % 8
+        color = GREY if (row + col) % 2 == 0 else BLACK
+        pygame.draw.rect(screen, color, (col*100, row*100, 100, 100))
+    
+    # Draw pieces
     for i in range(64):
         piece = board.piece_at(i)
-        if piece ==None:
-            pass
-        else:
-            screen.blit(pieces[str(piece)], ((i%8)*100, 700-(i//8)*100))
-
-    for i in range(7):
-        i = i+1
-        pygame.draw.line(screen, WHITE, (0, i*100), (800, i*100))
-        pygame.draw.line(screen, WHITE, (i*100,0), (i*100,800))
+        if piece:
+            # Adjusted y-coordinate calculation for better piece centering
+            x_pos = (i % 8) * 100 + (100 - PIECE_SIZE) // 2
+            y_pos = (7 - i // 8) * 100 + (100 - PIECE_SIZE) // 2
+            screen.blit(pieces[str(piece)], (x_pos, y_pos))
+    
+    # Draw grid lines (optional - can remove if using solid squares)
+    for i in range(1, 8):
+        pygame.draw.line(screen, WHITE, (0, i*100), (800, i*100), 2)
+        pygame.draw.line(screen, WHITE, (i*100, 0), (i*100, 800), 2)
     
     pygame.display.flip()
 
 def main(BOARD):
+     #for human vs human game
     screen.fill(BLACK)
     pygame.display.set_caption('AI Powered Chess')
 
@@ -118,3 +127,88 @@ def main(BOARD):
             status=False
             print(BOARD)
     pygame.quit()
+
+
+def main_one_agent(BOARD,agent, agent_color):
+    screen.fill(BLACK)
+    pygame.display.set_caption('AI Chess')
+
+    index_moves = []
+    status = True
+    while(status):
+        update(screen, BOARD)
+
+        if BOARD.turn == agent_color:
+            BOARD.push(agent(BOARD))
+            screen.fill(BLACK)
+        else:
+            for event in pygame.event.get():
+                if event.type == pygame.QUIT:
+                    status = False
+                
+                if event.type == pygame.MOUSEBUTTONDOWN:
+                    screen.fill(BLACK)
+
+                    pos = pygame.mouse.get_pos()
+                    square = (math.floor(pos[0]/100),math.floor(pos[1]/100))
+                    index = (7-square[1])*8+(square[0])
+                    
+                    if index in index_moves:
+                        move = moves[index_moves.index(index)]
+
+                        BOARD.push(move)
+                        index= None
+                        index_moves = []
+                    else:
+                        piece = BOARD.piece_at(index)
+                        if piece ==None:
+                            pass
+                        else:
+                            all_moves = list(BOARD.legal_moves)
+                            moves = []
+                            for m in all_moves:
+                                if m.from_square == index:
+                                    moves.append(m)
+                                    t = m.to_square
+                                    TX1 = 100*(t%8)
+                                    TY1 = 100*(t-t//8)
+                                    pygame.draw.rect(screen, BLUE, pygame.Rect(TX1, TY1, 100,100),5)
+                            
+                            index_moves = [a.to_square for a in moves]
+
+        if BOARD.outcome()!= None:
+            print(BOARD.outcome())
+            status = False
+            print(BOARD)
+
+    pygame.quit()
+    
+
+def main_two_agent(BOARD, agent1, agent_color1, agent2):
+    screen.fill(BLACK)
+    pygame.display.set_caption('Chess')
+    status = True
+    while(status):
+        update(screen, BOARD)
+        if BOARD.turn == agent_color1:
+            BOARD.push(agent1(BOARD))
+
+        else:
+            BOARD.push(agent2(BOARD))
+        
+        screen.fill(BLACK)
+
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                status = False
+        
+        if BOARD.outcome()!= None:
+            print(BOARD.outcome())
+            status=False
+            print(BOARD)
+
+    pygame.quit()
+
+
+
+
