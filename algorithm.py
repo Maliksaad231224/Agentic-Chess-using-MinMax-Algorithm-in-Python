@@ -15,6 +15,7 @@ except ValueError as e:
 
 
 scoring = {
+           
     'p': -1,
     'n': -3,
     'b': -3,
@@ -58,32 +59,23 @@ def most_value_agent(board):
             best_move = move
     return best_move
 
-def min_maxN(board, depth):
-    if depth == 0 or board.is_game_over():
-        return eval_board(board), None
-
-    moves = list(board.legal_moves)
-    best_score = None
-    best_move = None
+def min_maxN(BOARD, depth):
+    moves = list(BOARD.legal_moves)
+    scores = []
 
     for move in moves:
-        temp = deepcopy(board)
+        temp = deepcopy(BOARD)
         temp.push(move)
+        temp_best_move = most_value_agent(temp)  # Uses greedy agent for opponent
+        temp.push(temp_best_move)
+        scores.append(eval_board(temp))  # Only looks 2 plies ahead
 
-        if temp.is_checkmate():
-            return 1000, move
-
-        if temp.is_stalemate() or temp.is_insufficient_material():
-            score = 0
-        else:
-            score, _ = min_maxN(temp, depth - 1)
-
-        if best_score is None or (board.turn and score > best_score) or (not board.turn and score < best_score):
-            best_score = score
-            best_move = move
-
-    return best_score, best_move if depth == 3 else best_score
-
+    if BOARD.turn == True:
+        best_move = moves[scores.index(max(scores))]
+    else:
+        best_move = moves[scores.index(min(scores))]
+    
+    return best_move
 def play_min_maxN(board):
     if reader:
         try:
@@ -94,5 +86,6 @@ def play_min_maxN(board):
             print(f"Error while accessing the opening book: {e}")
             pass
 
-    _, best_move = min_maxN(board, 3)
+    best_move = min_maxN(board, 3)
     return best_move
+
